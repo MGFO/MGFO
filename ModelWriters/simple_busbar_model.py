@@ -86,6 +86,54 @@ class SimpleModelWriter(BaseModelWriter):
         self.model.create_SGen_constraint = pe.Constraint(range(len(self.net.sgen)), 
                                                 rule = (lambda m, g: self.model.pr_mw_SGen[g] <= self.model.create_SGen[g]*self.M))
 
+    def _initialize_storage(self):
+        scene_iterator = range(len(self.scenes))
+
+        #storage
+        self.model.create_Storage = pe.Var(range(len(self.net.storage)), within = pe.Binary)
+        self.model.pr_mw_Storage = pe.Var(range(len(self.net.storage)), within = pe.NonNegativeReals)
+        self.model.er_mwh_Storage = pe.Var(range(len(self.net.storage)), within = pe.NonNegativeReals)
+        self.model.p_mw_Storage = pe.Var(itertools.product(range(len(self.net.storage)), scene_iterator), within = pe.Reals)
+        self.model.soc_mwh_Storage = pe.Var(itertools.product(range(len(self.net.storage)), scene_iterator), within = pe.NonNegativeReals)
+        
+        #power less that rating*availability
+        self.model.p_mw_Storage_constraint_a = pe.Constraint(itertools.product(range(len(self.net.storage)), scene_iterator), 
+                                               rule = (lambda m, g, s: m.p_mw_Storage[(g,s)] <= 
+                                                        m.pr_mw_Storage[g]*self._element_get_value(self.net.storage.iloc[g]['pa_pu'], 
+                                                                                                         self.scenes.iloc[s]) ))
+        #power less that stored power
+        self.model.p_mw_Storage_constraint_b = pe.Constraint(itertools.product(range(len(self.net.storage)), scene_iterator), 
+                                               rule = (lambda m, g, s: m.p_mw_Storage[(g,s)] <= 
+                                                        m.soc_mwh_Storage[(g,s)]/self.scenes.iloc[s]['dt']) )
+        #charging less that rated power
+        self.model.p_mw_Storage_constraint_c = pe.Constraint(itertools.product(range(len(self.net.storage)), scene_iterator), 
+                                               rule = (lambda m, g, s: m.p_mw_Storage[(g,s)] >= 
+                                                        -m.pr_mw_Storage[g]*self._element_get_value(self.net.storage.iloc[g]['pa_pu'], 
+                                                                                                         self.scenes.iloc[s]) ))        
+        def _storage_energy_constraint(m, g, s):
+            if s==0:
+                return pe.Constraint.Skip
+            else:
+                return self.model.soc_mwh_Storage[(g,s)] == m.soc_mwh_Storage[(g,s-1)]*(1-self.net.storage['sigma'][g]) \
+                                                            - m.p_mw_Storage[(g,s)]*self.scenes['dt'][s]*self.net.storage['eta_bb'][g]
+        
+        #soc update on each scene
+        self.model.soc_mwh_Storage_constraint_a = pe.Constraint(itertools.product(range(len(self.net.storage)), scene_iterator), 
+                                               rule = _storage_energy_constraint)
+        #upper limit on soc
+        self.model.soc_mwh_Storage_constraint_b = pe.Constraint(itertools.product(range(len(self.net.storage)), scene_iterator), 
+                                               rule = (lambda m, g, s: m.soc_mwh_Storage[(g,s)] <= m.er_mwh_Storage[g]))
+
+        
+        #Big M for power rating
+        self.model.create_Storage_constraint_a = pe.Constraint(range(len(self.net.storage)), 
+                                                rule = (lambda m, g: self.model.pr_mw_Storage[g] <= self.model.create_Storage[g]*self.M))
+
+        #Big M for capacity
+        self.model.create_Storage_constraint_b = pe.Constraint(range(len(self.net.storage)), 
+                                                rule = (lambda m, g: self.model.er_mwh_Storage[g] <= self.model.create_Storage[g]*self.M))
+
+        
     def _power_balance_expression(self, scene_index): #scene is the scene index
         ##Test what happend with some network without a type, for example, no ext grid.
         #return the power balance for the selected scene:
@@ -96,10 +144,13 @@ class SimpleModelWriter(BaseModelWriter):
         #Loads:
         pt_mw_load = sum(self.model.p_mw_Load[element, scene_index] for element in range(len(self.net.load)))
 
-        #Loads:
+        #Gens:
         pt_mw_sgen = sum(self.model.p_mw_SGen[element, scene_index] for element in range(len(self.net.sgen)))
 
-        return pt_mw_ext_grid + pt_mw_sgen - pt_mw_load
+        #Storage:
+        pt_mw_storage = sum(self.model.p_mw_Storage[element, scene_index] for element in range(len(self.net.storage)))
+
+        return pt_mw_ext_grid + pt_mw_sgen + pt_mw_storage - pt_mw_load
 
     def _power_balance_constraint(self):
         #power balance constraint
@@ -114,10 +165,15 @@ class SimpleModelWriter(BaseModelWriter):
                             for element in range(len(self.net.load)))
         ic_sgen = sum(self.net.sgen['ic_0_mu'][element]*self.model.create_SGen[element] + self.net.sgen['ic_1_mu'][element]*self.model.pr_mw_SGen[element] 
                             for element in range(len(self.net.sgen)))
+        ic_storage = sum(self.net.storage['ic_0_mu'][element]*self.model.create_Storage[element] 
+                         + self.net.storage['ic_1_mu'][element]*self.model.pr_mw_Storage[element] 
+                         + self.net.storage['ic_1_mu_cap'][element]*self.model.er_mwh_Storage[element] 
+                            for element in range(len(self.net.storage)))
 
-        return ic_ext_grid + ic_load + ic_sgen
+        return ic_ext_grid + ic_load + ic_sgen + ic_storage
     
     def _hourly_operational_cost_expression(self, scene_index):
+        ## generalizar este codigo
         oc_ext_grid = sum(self.net.ext_grid['oc_0_mu'][element] + 
                           self._element_get_value(self.net.ext_grid['oc_1_mu'][element],
                                 self.scenes.iloc[scene_index])*self.model.p_mw_Ext[(element, scene_index)] 
@@ -130,8 +186,16 @@ class SimpleModelWriter(BaseModelWriter):
                         self._element_get_value(self.net.sgen['oc_1_mu'][element], 
                                 self.scenes.iloc[scene_index])*self.model.p_mw_SGen[(element,scene_index)] 
                                 for element in range(len(self.net.sgen)))
+        oc_sgen = sum(self.net.sgen['oc_0_mu'][element] + 
+                        self._element_get_value(self.net.sgen['oc_1_mu'][element], 
+                                self.scenes.iloc[scene_index])*self.model.p_mw_SGen[(element,scene_index)] 
+                                for element in range(len(self.net.sgen)))
+        oc_storage = sum(self.net.storage['oc_0_mu'][element] + 
+                        self._element_get_value(self.net.storage['oc_1_mu'][element], 
+                                self.scenes.iloc[scene_index])*self.model.p_mw_Storage[(element,scene_index)] 
+                                for element in range(len(self.net.storage)))
         
-        return oc_ext_grid + oc_load + oc_sgen 
+        return oc_ext_grid + oc_load + oc_sgen + oc_storage
     
     def _operational_cost_expression(self):
         scene_iterator = range(len(self.scenes))
@@ -149,6 +213,7 @@ class SimpleModelWriter(BaseModelWriter):
         self._initialize_ext_grids()
         self._initialize_loads()        
         self._initialize_sgens()
+        self._initialize_storage()
     
         return self.model
     
@@ -183,6 +248,20 @@ class SimpleModelWriter(BaseModelWriter):
                 self.net.sgen['max_p_mw'][g] = 0.0
                 self.net.sgen['max_q_mvar'][g] = 0.0
                 self.net.sgen['pr_mw'][g] = 0.0
+        
+        for g in self.model.create_Storage:
+            if self.model.create_Storage[g].value:
+                self.net.storage['in_service'][g] = True
+                #self.net.storage['max_p_mw'][g] = self.model.pr_mw_Storage[g].value
+                #self.net.storage['max_q_mvar'][g] = 0.25*self.model.pr_mw_Storage[g].value  #default value
+                self.net.storage['pr_mw'][g] = self.model.pr_mw_Storage[g].value
+                self.net.storage['max_e_mwh'][g] = self.model.er_mwh_Storage[g].value
+            else:
+                self.net.storage['in_service'][g] = False
+                #self.net.storage['max_p_mw'][g] = 0.0
+                #self.net.storage['max_q_mvar'][g] = 0.0
+                self.net.storage['pr_mw'][g] = 0.0
+                self.net.storage['max_e_mwh'][g] = 0.0
     
     def get_scenes_results(self):
         """
@@ -221,6 +300,20 @@ class SimpleModelWriter(BaseModelWriter):
                     name = 'LOAD[{0}]'.format(element)
                 columns[name] = 0.0
                 col_refs[name] = {'set': self.model.p_mw_SGen, 'main_index': element}
+
+        table = self.net.storage
+        for element in range(len(table)):
+            if self.model.create_Storage[element]:
+                if not table['name'][element] == '':
+                    name1 = table['name'][element]
+                    name2 = 'E_' + table['name'][element]                     
+                else:
+                    name1 = 'P_STORAGE[{0}]'.format(element)
+                    name1 = 'E_STORAGE[{0}]'.format(element)
+                columns[name1] = 0.0
+                col_refs[name1] = {'set': self.model.p_mw_Storage, 'main_index': element}
+                columns[name2] = 0.0
+                col_refs[name2] = {'set': self.model.soc_mwh_Storage, 'main_index': element}
 
                 
         #Extracción de resultados en forma de Pandas Dataframe
