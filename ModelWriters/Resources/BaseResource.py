@@ -38,7 +38,8 @@ class BaseResource:
                 return v
             else:
                 #true list
-                raise Exception("Not supported yet")
+                return v[scene]
+                ##raise Exception("Not supported yet: {0}-{1}".format(v, scene))
         else:
             #if it is not callable nor subscriptable, return whatever:
             return v

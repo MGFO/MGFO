@@ -10,6 +10,8 @@ class BaseModelWriter:
         self.scenes = scenes
         self.model = None
         self.results = None
+        self.report_attrs = ['p_mw', 'soc_mwh']
+
         
     def create_model(self):
         self.model = pe.ConcreteModel()

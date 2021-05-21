@@ -2,7 +2,7 @@ from .BaseGen import Generator
 
 class WTGenerator(Generator):
     
-    def wind_output(model_status={}):
+    def wind_output(self, model_status={}):
         #modelo sencillo
         #devuelvr la fracción de la potencia entregada en función del tiempo
         #no toma en cuenta la radicación solar ni la temperatura
