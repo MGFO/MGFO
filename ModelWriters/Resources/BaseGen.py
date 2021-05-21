@@ -47,7 +47,7 @@ class Generator(BaseResource):
 
     def initial_cost(self):
         """Returns initial cost in monetary units, in numeric form or as an expression of the decision variables."""
-        return self['ic_0_mu'] + self['ic_1_mu']*self['pr_mw']
+        return self['ic_0_mu']*self['create'] + self['ic_1_mu']*self['pr_mw']
 
     def operating_cost(self, scene):
         """Returns initial cost in monetary units, in numeric form or as an expression of the decision variables

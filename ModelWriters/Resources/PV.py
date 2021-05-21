@@ -2,7 +2,7 @@ from .BaseGen import Generator
 
 class PVGenerator(Generator):
     
-    def solar_output(model_status={}):
+    def solar_output(self, model_status={}):
         #modelo sencillo
         #usando los datos de radiacion solar entregada por el modelo
         #considero el valor normal 1000 W/m2

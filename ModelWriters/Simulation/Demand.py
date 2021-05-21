@@ -1,4 +1,5 @@
-
+import math
+import random
 
 def scalonated_seasoned_randomized_demand(model_status={}):
     #modelo sencillo en forma de escalones
