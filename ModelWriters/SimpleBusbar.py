@@ -105,12 +105,14 @@ class SimpleModelWriter(BaseModelWriter):
                         var = getattr(self.model, vn).value
                         if var:
                             table['in_service'][element] = True
-                            table['max_p_mw'][element] = getattr(self.model, m.name + '_pr_mw').value
-                            table['max_q_mvar'][element] = 0.5*getattr(self.model, m.name + '_pr_mw').value  #default value
+                            if hasattr(table, 'max_p_mw'): table['max_p_mw'][element] = getattr(self.model, m.name + '_pr_mw').value 
+                            if hasattr(table, 'max_q_mvar'): table['max_q_mvar'][element] = 0.5*getattr(self.model, m.name + '_pr_mw').value 
+                            if hasattr(table, 'max_e_mwh'): table['max_e_mwh'][element] = getattr(self.model, m.name + '_er_mwh').value
                         else:
                             table['in_service'][element] = False
-                            table['max_p_mw'][element] = 0.0
-                            table['max_q_mvar'][element] = 0.0
+                            if hasattr(table, 'max_p_mw'): table['max_p_mw'][element] = 0.0 
+                            if hasattr(table, 'max_q_mvar'): table['max_q_mvar'][element] = 0.0 
+                            if hasattr(table, 'max_e_mwh'): table['max_e_mwh'][element] = 0.0 
     
     def get_scenes_results(self):
         """
