@@ -32,7 +32,12 @@ class SimpleModelWriter(BaseModelWriter):
             for element in range(len(table)):
                 if table['model'][element]:
                     ct += table['model'][element].initial_cost()
-            c += ct
+                if isinstance(ct, np.float64):
+                    ct = float(ct)
+            try:
+                c += ct
+            except Exception:
+                raise Exception("c: {0} ct:{1}".format(c.__class__, ct.__class__))
         return c
 
 
