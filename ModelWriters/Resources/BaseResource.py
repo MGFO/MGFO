@@ -18,7 +18,7 @@ class BaseResource:
         self.oc_1_mu = 0.0
         
         self.pa_pu = 1.0
-        self.pr_pu = 1.0
+        self.pr_mw = 1.0
         
         self.decide_construction = True   #model must decide if construct or not 
         self.size = True   #model must decide optimal sizing  of the element
