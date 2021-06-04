@@ -10,7 +10,7 @@ class BaseModelWriter:
         self.scenes = scenes
         self.model = None
         self.results = None
-        self.report_attrs = ['p_mw', 'soc_mwh']
+        self.report_attrs = ['p_mw', 'soc_mwh', 'pf_mw']
         self.tables = []
 
         
