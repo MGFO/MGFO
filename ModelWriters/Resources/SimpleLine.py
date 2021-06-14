@@ -35,7 +35,7 @@ class SimpleLine(BaseResource):
         
         self.decide_construction = False   #model must decide if construct or not 
         self.size = False   #model must decide optimal sizing  of the element
-
+    
     def __str__(self):
         return 'Line: ' + self.name
         
@@ -53,12 +53,25 @@ class SimpleLine(BaseResource):
         for s in self.scene_iterator:
             self.pf_mw[s].setlb(- self.pr_mw * self.max_i_pu * self['pa_pu', self.scenes.iloc[s]])
             self.pf_mw[s].setub(- self.pf_mw[s].lb)
-        
+        #this var will be reported
+        self.report_attrs[vn] = self.pf_mw
         #active power: power losses are not contemplated in this model
         self.p_mw = 0.0
 
-
-
+    def get_scenes_results(self, data_frame, include_inactive = False):
+        """Add simulation results to the data frame, assumed same lenght as the scene collection.
+        Parameters:
+            data_frame: Pandas data frame.
+            include_inactive: If true, result from not selected resources are included.
+        Returns:
+            data_frame"""
+        for attr in self.report_attrs:
+            res = np.zeros(len(self.scenes))
+            for i in range(len(self.scenes)):
+                res[i] = self.report_attrs[attr][i].value
+            data_frame[attr] = res            
+        return data_frame
+    
     def active_power(self, scene):
         """Active power is limited to the power losses. That is to avoid double accounting of the 
         power transmited in the network power balance"""
@@ -81,4 +94,3 @@ class SimpleLine(BaseResource):
         """Returns initial cost in monetary units, in numeric form or as an expression of the decision variables
         scene is the scene index"""
         return self['oc_0_mu'] + self['oc_1_mu']*self['pf_mw', scene]
-

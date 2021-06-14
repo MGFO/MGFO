@@ -20,6 +20,9 @@ class BaseResource:
         self.pa_pu = 1.0
         self.pr_mw = 1.0
         
+        """Dictionary of pairs, column name: var reference"""
+        self.report_attrs = {}
+        
         self.decide_construction = True   #model must decide if construct or not 
         self.size = True   #model must decide optimal sizing  of the element
 
@@ -73,7 +76,16 @@ class BaseResource:
         self.scenes = scenes
         
         raise Exception("Must implement")
-
+    
+    def get_scenes_results(self, data_frame, include_inactive = False):
+        """Add simulation results to the data frame, assumed same lenght as the scene collection.
+        Parameters:
+            data_frame: Pandas data frame.
+            include_inactive: If true, result from not selected resources are included.
+        Returns:
+            data_frame"""
+        raise Exception("Must implement - {0}".format(self))
+    
     def active_power(self, scene):
         """Must return active power in mw, in numeric form or as an expression of the decision variables.
         scene is the scene index"""

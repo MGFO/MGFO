@@ -40,11 +40,15 @@ class Storage(Generator):
         vn = self.name + '_p_mw'
         self.p_mw = pe.Var(self.scene_iterator, within = pe.Reals)
         setattr(self.model, vn, self.p_mw)
+        #this var will be reported
+        self.report_attrs[vn] = self.p_mw
 
         #stored energy
         vn = self.name + '_soc_mwh'
         self.soc_mwh = pe.Var(self.scene_iterator, within = pe.NonNegativeReals)
         setattr(self.model, vn, self.soc_mwh)
+        #this var will be reported
+        self.report_attrs[vn] = self.soc_mwh
 
         #power rating constraint
         cn = self.name + '_p_constraint_pr'
