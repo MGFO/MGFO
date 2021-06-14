@@ -1,5 +1,4 @@
 import pyomo.environ as pe
-#import itertools
 import pandas as pd
 import numpy as np
 
@@ -10,7 +9,6 @@ class BaseModelWriter:
         self.scenes = scenes
         self.model = None
         self.results = None
-        self.report_attrs = ['p_mw', 'soc_mwh', 'pf_mw']
         self.tables = []
 
         
@@ -47,31 +45,15 @@ class BaseModelWriter:
     def get_scenes_results(self):
         """
         Returns a new Pandas DataFrame with the simulation results based on the
-        optimization results. Sizeable elements not selected aren't included.
+        optimization results.
         """
-        
         #Extracción de resultados en forma de Pandas Dataframe
         self.results =  pd.DataFrame([], index = range(len(self.scenes)))
 
         for table in self.tables:
             for element in range(len(table)):
                 m = table['model'][element] 
-                if m:
-                    if m.decide_construction:
-                        vn = m.name + '_create'
-                        var = getattr(self.model, vn).value
-                        if not var:
-                            continue
-                    for attr in self.report_attrs:
-                        if hasattr(m, attr):
-                            col_name = m.name + '_' + attr
-                            res = np.zeros(len(self.scenes))
-                            for i in range(len(self.scenes)):
-                                v = m[attr, i]
-                                #if the attr is a data frame
-                                if hasattr(v, 'value'):
-                                    v = v.value
-                                res[i] = v
-                            self.results[col_name] = res            
-            
+                if m and hasattr(m, 'get_scenes_results'):               
+                    m.get_scenes_results(self.results)
+                    
         return self.results

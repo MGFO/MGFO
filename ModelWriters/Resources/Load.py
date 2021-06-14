@@ -1,5 +1,6 @@
 import pyomo.environ as pe
 from .BaseResource import BaseResource
+import numpy as np
 
 class Load(BaseResource):
     
@@ -19,6 +20,21 @@ class Load(BaseResource):
         vn = self.name + '_p_mw'
         self.p_mw = pe.Var(self.scene_iterator, within = pe.Reals)
         setattr(self.model, vn, self.p_mw)
+        #this var will be reported
+        self.report_attrs[vn] = self.p_mw
+
+    def get_scenes_results(self, data_frame, include_inactive = False):
+        """Add simulation results to the data frame, assumed same lenght as the scene collection.
+        Parameters:
+            data_frame: Pandas data frame.
+        Returns:
+            data_frame"""
+        for attr in self.report_attrs:
+            res = np.zeros(len(self.scenes))
+            for i in range(len(self.scenes)):
+                res[i] = self.report_attrs[attr][i].value
+            data_frame[attr] = res            
+        return data_frame
     
     def active_power(self, scene):
         """Returns active power in mw, in numeric form or as an expression of the decision variables.

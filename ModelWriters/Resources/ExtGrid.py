@@ -1,5 +1,6 @@
 import pyomo.environ as pe
 from .BaseResource import BaseResource
+import numpy as np
 
 class ExtGrid(BaseResource):
     
@@ -20,8 +21,23 @@ class ExtGrid(BaseResource):
         for e in self.scene_iterator:
             self.p_mw[e].setlb(0)
             self.p_mw[e].setub(self['pa_pu', self.scenes.iloc[e]]*self['pr_mw'])
+        #this var will be reported
+        self.report_attrs[vn] = self.p_mw
 
         return
+
+    def get_scenes_results(self, data_frame, include_inactive = False):
+        """Add simulation results to the data frame, assumed same lenght as the scene collection.
+        Parameters:
+            data_frame: Pandas data frame.
+        Returns:
+            data_frame"""
+        for attr in self.report_attrs:
+            res = np.zeros(len(self.scenes))
+            for i in range(len(self.scenes)):
+                res[i] = self.report_attrs[attr][i].value
+            data_frame[attr] = res            
+        return data_frame
     
     def active_power(self, scene):
         """Returns active power in mw, as an expression of the decision variables.
