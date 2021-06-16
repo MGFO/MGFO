@@ -1,39 +1,45 @@
 import math
 import random
 
-def scalonated_seasoned_randomized_demand(model_status={}):
-    #modelo sencillo en forma de escalones
-    #devuelvr la fracción de la carga empleada
-    #se considera que la carga tiene una variabilidad aleatoria de un 20% y es mayor en verano e invierno en un 30%
-    #la variabilidad total puede ser 1.3*1.2=1.56 verano-invierno o 0.7*0.8 = 0.56 otoño-primavera, 
-    res = 0.0
-    if 'h' in model_status:
-        h = model_status['h']
-        if 0.0 <= h and h < 6.0:
-            res = 0.2
-        elif 6.0 <= h and h < 8.0:
-            res = 0.4
-        elif 8.0 <= h and h < 18.0:
-            res = 0.5
-        elif 18.0 <= h and h < 22.0:
-            res = 1.0
-        elif 22.0 <= h and h < 24.0:
-            res = 0.3            
+from .BaseSimulator import BaseSimulator as BS
+
+class DemandSimulator(BS):
+    """
+    Demand simulator is at its core a piecewise simulator, plus a season component
+    sine-based, north-hemisfere referenced, that is, winter starts Dec. 21
+    """
+    
+    def __init__(self, hour_steps = None, hour_values = None, summer_peak = 0.3, winter_peak = 0.2, post_random_up = 0.2, post_random_down = 0.2):
+        super().__init__(model = 'seasoned_piecewise', post_random_up = post_random_up, post_random_down = post_random_down)
+        
+        self.summer_peak = summer_peak
+        self.winter_peak = winter_peak
+        
+        if hour_steps and hour_values:
+            self.piecewise_hours = hour_steps
+            self.piecewise_values = hour_values
+        elif hour_steps or hour_values:
+            raise ValueError("Hour steps and values must be set simultaneously")
         else:
-            raise ValueError("Hour outside model range")
-    else:
-        raise ValueError("Hour not defined")
+            self.piecewise_hours =  [ 6.0, 8.0, 18.0, 22.0, 24.0]
+            self.piecewise_values = [ 0.2, 0.4,  0.5,  1.0,  0.3]            
     
-    #estacionalidad
-    if 'd' in model_status:
-        d = model_status['d']
-        #se asume que el día de mayor consumo es el inicio del verano y del invierno (21/12 y 21/07), por eso sumo 10 días el dia 0
-        #divido por 180 porque hay dos picos en el año y paso a radianes
-        estacionalidad = 1 + 0.3*math.cos((d + 10.0)/180.0*2*math.pi)  
-    else:
-        raise ValueError("Day not defined")
-    res = res * estacionalidad
-    
-    #Aleatoriedad:
-    res = res*random.uniform(0.8, 1.2)
-    return res
+        self.models['seasoned_piecewise'] = self.model_seasoned_piecewise
+        
+    def model_seasoned_piecewise(self, scene):
+        #initial value, hourly-based:
+        val = self.models['piecewise'](scene)
+
+        d = scene['day']
+        #year is divided in two seasons: winter, peaking on -10th, and summer, peaking in 172th
+        #then, summer season starts the day 172 - 3/8*365 = 36th up to 36th + 182 = 219th day
+        #This way, summer holds spring and summer. In mid-spring there are a warm season minimmum.
+        #The same corresponds to mid-fall
+        
+        season_coef = math.cos((d + 10.0)/182.5*2*math.pi)  
+        if d < 36 or d > 219:
+            val = val*(1+self.winter_peak*season_coef)
+        else:
+            val = val*(1+self.summer_peak*season_coef)
+            
+        return val
