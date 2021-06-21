@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+import math
 
 class SceneBuilder:
     """
@@ -14,8 +16,8 @@ class SceneBuilder:
         dd: Number of simulated repeated days. See *dt*.
         hour: Hour of the day. Can be a fractional hour.
         dt: Delta of time for this scene, in hours or fraction.
-        discount_rate: Discount rate for future costs.
-        growth_rate: A coefficient that represents demand growth rate
+        discount: Discount for future costs.
+        growth: A coefficient that represents demand growth rate
         temperature: Temperature at the moment.
         solar_irradiance: Solar irradiance, in W/m^2, at the moment.
         wind_speed: Wind speed at the moment in m/s.
@@ -23,21 +25,112 @@ class SceneBuilder:
     Basic usage consists to specify simulation parameters using several methods and then to use
     the *build_scenes* method to return a DataFrame with the simulated scenes. An existant object that
     support dict interface can be used instead a DataFrame by setting the scenes member.
+    
+    Days can be specified in two ways:
+        -Using a selectec collection of days, using the selected_days parameter with an array of days.
+        In this case the dd parameter multiplies all daily-related quantities without change as given
+        -Using the subperiods argument: n subperiods are extracted for the year, equally-spaced, of 
+        *days_in_subperiods* days each. In this case, dd = 365/(subperiods*days_in_subperiods)
+        First subperiod starts as given by *subperiod_start*
     """
     
-    def __init__(self, years=1, subperiods=1, days_in_subperiods=365,  dt=1.0, discount_rate=1.0, growth_rate=1.0, 
-                selected_days = None, scenes = None):
+    def __init__(self, years=1, subperiods=1, days_in_subperiods=365, subperiod_start=0, dd=None,  dt=None, discount_rate=0.0, growth_rate=0.0, 
+                selected_days = None, selected_hours = None, scenes = None):
         self.years = years
         self.subperiods = subperiods
+        self.subperiod_start = subperiod_start
         self.days_in_subperiods = days_in_subperiods
-        self.dt = dt
         self.discount_rate = discount_rate
         self.growth_rate = growth_rate
         self.selected_days = selected_days
+        self.selected_hours = selected_hours
         self.scenes = scenes
         
-        ##m_s_base = [{'y': 0, 'd': 0, 'dd':1.0, 'h': 0.0, 'dt': 1.0, 'temp': 20.0, 'I':1000.0, 'wv': 10.0, 'eg': 1.0}]
+        if selected_days and not dd:
+            raise Exception("dd must be specified when using selected_days")
+
+        if selected_hours and not dt:
+            raise Exception("dt must be specified when using selected_days")
         
+        if not dt:
+            self.dt = 1.0
+        else:
+            self.dt = dt
+
+        if not dd:
+            self.dd = 1.0
+        else:
+            self.dd = dd
+            
     def build_scenes(self):
+        """Escene building is made in two steps. First, the time part is resolved.
+        In the second part, the data list with additional columns is iterated and the corresponding simulation
+        functions are called in order to complete each scene"""
+        
+
+        if self.selected_hours:
+            hours_array = self.selected_hours
+            daily_registers = len(self.selected_hours)
+        else:
+            daily_registers = math.floor(24.0/self.dt)
+            hours_array = [self.dt*i for i in range(daily_registers)]
+        
+        #We made an array for the selected days in the year, based on the user choices
+        if self.selected_days:
+            days = len(self.selected_days)
+            days_array = self.selected_days
+        else:
+            day_number = self.subperiod_start
+            subperiod_jump = math.floor(365/self.subperiods)
+            days_array = []
+            for s in range(self.subperiods):
+                for sd in range(self.days_in_subperiods):
+                    days_array.append(day_number)
+                    day_number += 1
+                day_number += (subperiod_jump - self.days_in_subperiods)
+                
+            days = len(days_array)
+            self.dd = 365.0/days
+            
+        total_registers = self.years * days * daily_registers
+
+        #initial elements of the scene:
+        base_scene = [{'year': 0, 'day': 0, 'dd':self.dd, 'hour': 0.0, 'dt': self.dt}]
+
+        scenes =  pd.DataFrame(base_scene, index = range(total_registers))
+
+        reg = 0
+        #Accessing pandas data frames are painfully slow.
+        #columns are stored in numpy arrays and later transferred to the data frame
+        days = np.zeros(total_registers)
+        hours = np.zeros(total_registers)
+        years = np.zeros(total_registers)
+        
+        for y in range(self.years):
+            for d in days_array:
+                for h in hours_array:
+                    days[reg] = d
+                    hours[reg] = h
+                    years[reg] = y 
+                    reg += 1
+        scenes['day'] = days
+        scenes['hour'] = hours
+        scenes['year'] = years
+        
+        
+        self.scenes = scenes
+        """
+        reg = 0
+        for d in Dias_i:
+        for h in T_i:
+            Escenarios['d'][reg] = d
+            Escenarios['h'][reg] = h
+            Escenarios['I'][reg] = Solar.solar_irradiance_seasoned_randomized(d, h)
+            Escenarios['wv'][reg] = random.uniform(1.0, 20.0)
+            reg += 1
+        
         raise Exception("Must Implement")
         return 
+        """
+        
+        return scenes
