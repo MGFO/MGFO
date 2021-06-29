@@ -55,7 +55,7 @@ class SimpleModelWriter(BaseModelWriter):
     def operational_cost_expression(self):
         scene_iterator = range(len(self.scenes))
         
-        op_cost = sum(self.hourly_operational_cost_expression(e)*self.scenes['dt'][e] for e in scene_iterator)
+        op_cost = sum(self.hourly_operational_cost_expression(e)*self.scenes['dt'][e]*self.scenes['dd'][e]*self.scenes['discount'][e] for e in scene_iterator)
         return op_cost
     
     def objective_function(self):

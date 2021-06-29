@@ -1,13 +1,19 @@
 import pyomo.environ as pe
 from .BaseResource import BaseResource
+from ..Simulation import Economics
+
 import numpy as np
 
 class ExtGrid(BaseResource):
     
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self, name, peak_value=200e-6, valley_value=120e-6, rest_value=160e-6,
+                 oc_1_mu = 0.0, pr_mw = 1.0):
+        super().__init__(name, oc_1_mu = oc_1_mu, pr_mw = pr_mw)
         self.decide_construction = False
         self.size = False
+        
+        if not oc_1_mu:
+            self.oc_1_mu = Economics.ElectricityCostSimulator(peak_value = peak_value, valley_value = valley_value, rest_value = rest_value)
     
     def initialize_model(self, model, scenes):
         self.model = model

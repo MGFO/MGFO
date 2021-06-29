@@ -1,15 +1,21 @@
 import pyomo.environ as pe
 from .BaseResource import BaseResource
+from ..Simulation import Demand
 import numpy as np
 
 class Load(BaseResource):
     
-    def __init__(self, name):
+    def __init__(self, name, pr_mw = 0.050, pa_pu = None):
         super().__init__(name)
         self.decide_construction = False
         self.size = False
-        self.pr_mw = 0.1
-        self.p_mw = 0.1
+        self.pr_mw = pr_mw
+        self.p_mw = pr_mw
+        
+        if pa_pu:
+            self.pa_pu = pa_pu
+        else:
+            self.pa_pu = Demand.DemandSimulator()
     
     def initialize_model(self, model, scenes):
         self.model = model

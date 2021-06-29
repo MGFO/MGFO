@@ -10,7 +10,17 @@ class BaseModelWriter:
         self.model = None
         self.results = None
         self.tables = []
+        
+        if net:
+            self._add_extra_columns(self.net)
 
+    def _add_extra_columns(self, net):
+        all_tables = ['bus', 'load','sgen', 'motor', 'asymmetric_load', 'asymmetric_sgen', 'storage',
+                        'gen', 'switch', 'shunt','ext_grid', 'line', 'trafo', 'trafo3w', 'impedance',
+                        'dcline', 'ward', 'xward', 'measurement', 'pwl_cost', 'poly_cost', 'controller']
+        
+        for t in all_tables: 
+            net[t]['model'] = None
         
     def create_model(self):
         self.model = pe.ConcreteModel()

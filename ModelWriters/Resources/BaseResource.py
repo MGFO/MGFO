@@ -5,20 +5,20 @@ import numpy as np
 
 class BaseResource:
     
-    def __init__(self, name):
+    def __init__(self, name, ic_0_mu = 0.0, ic_1_mu = 0.0, oc_0_mu = 0.0, oc_1_mu = 0.0, pa_pu = 1.0, pr_mw = 1.0):
         #self.net = None
         self.scenes = None
         self.model = None
         self.name = name
         
-        self.ic_0_mu = 0.0
-        self.ic_1_mu = 0.0
+        self.ic_0_mu = ic_0_mu
+        self.ic_1_mu = ic_1_mu
 
-        self.oc_0_mu = 0.0
-        self.oc_1_mu = 0.0
+        self.oc_0_mu = oc_0_mu
+        self.oc_1_mu = oc_1_mu
         
-        self.pa_pu = 1.0
-        self.pr_mw = 1.0
+        self.pa_pu = pa_pu
+        self.pr_mw = pr_mw
         
         """Dictionary of pairs, column name: var reference"""
         self.report_attrs = {}
@@ -33,6 +33,9 @@ class BaseResource:
                 return default
             else:
                 raise Exception("Not default value for {0}".format(value))
+        elif hasattr(v, "simulate") and callable(v.simulate) is True:
+            #simulator interface:
+            return v.simulate(scene)
         elif callable(v) is True:
             return v(scene)
         elif hasattr(v, "__getitem__") is True:

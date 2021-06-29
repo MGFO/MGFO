@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 import math
 
+from ..Simulation import Economics
+from ..Simulation import Solar
+from ..Simulation import Wind
+
+
 class SceneBuilder:
     """
     SceneBuilder class
@@ -61,12 +66,32 @@ class SceneBuilder:
             self.dd = 1.0
         else:
             self.dd = dd
-            
+        
+        self.additional_columns = {}
+        
+        self.add_standard_columns()
+        
+    def add_column(self, name, generator):
+        self.additional_columns[name] = generator
+    
+    def add_standard_columns(self):
+        dg = Economics.DeterministicGrowthSimulator(annual_rate = self.growth_rate)
+        self.add_column('growth', dg)
+
+        disc = Economics.PVSimulator(annual_rate = self.discount_rate)
+        self.add_column('discount', disc)
+
+        solar = Solar.SolarIrradianceSimulator()
+        self.add_column('solar_irradiance', solar)
+        
+        wind = Wind.CorrelatedWeibull()
+        self.add_column('wind_speed', wind)
+        
     def build_scenes(self):
         """Escene building is made in two steps. First, the time part is resolved.
         In the second part, the data list with additional columns is iterated and the corresponding simulation
         functions are called in order to complete each scene"""
-        
+        column_list = {}
 
         if self.selected_hours:
             hours_array = self.selected_hours
@@ -94,11 +119,6 @@ class SceneBuilder:
             
         total_registers = self.years * days * daily_registers
 
-        #initial elements of the scene:
-        base_scene = [{'year': 0, 'day': 0, 'dd':self.dd, 'hour': 0.0, 'dt': self.dt}]
-
-        scenes =  pd.DataFrame(base_scene, index = range(total_registers))
-
         reg = 0
         #Accessing pandas data frames are painfully slow.
         #columns are stored in numpy arrays and later transferred to the data frame
@@ -113,11 +133,28 @@ class SceneBuilder:
                     hours[reg] = h
                     years[reg] = y 
                     reg += 1
-        scenes['day'] = days
-        scenes['hour'] = hours
-        scenes['year'] = years
+
+        column_list['year'] = years
+        column_list['day'] = days
+        column_list['dd'] = np.ones(total_registers)*self.dd
+        column_list['hour'] = hours
+        column_list['dt'] = np.ones(total_registers)*self.dt
         
+        #Auxiliary function
+        def get_scene_from_cl(cl, i):
+            res = {}
+            for k in cl:
+                res[k] = cl[k][i]
+            return res
         
+        for col in self.additional_columns:
+            values = np.zeros(total_registers)
+            simulator = self.additional_columns[col].simulate
+            for i in range(total_registers):
+                values[i] = simulator(get_scene_from_cl(column_list, i))
+            column_list[col] = values
+        
+        scenes =  pd.DataFrame(column_list)
         self.scenes = scenes
         """
         reg = 0

@@ -3,17 +3,23 @@ from .BaseGen import Generator
 
 class Storage(Generator):
     
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self, name, ic_0_mu = 0.0, ic_1_mu = 0.0, ic_1_mu_cap = 0.0, oc_0_mu = 0.0, oc_1_mu = 0.0, eta_bb = 0.8, sigma = 2.1e-3):
+        super().__init__(name, ic_0_mu = ic_0_mu, ic_1_mu = ic_1_mu, oc_0_mu = oc_0_mu, oc_1_mu = oc_1_mu)
+        
+        #battery size cost coefficient:
+        self.ic_1_mu_cap = ic_1_mu_cap
         
         #an attribute for energy storage is added
         self.er_mwh = 0.0
         
         #Round-Trip efficiency:
-        self.eta_bb = 0.8
+        self.eta_bb = eta_bb
         
         #hourly self-discharge:
-        self.sigma = 0.05/24
+        self.sigma = sigma
+        
+        #available power:
+        self.pa_pu = 1.0
         
     def initialize_model(self, model, scenes):
         self.model = model
