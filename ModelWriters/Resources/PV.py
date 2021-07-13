@@ -1,9 +1,6 @@
 from .BaseGen import Generator, DiscreteGenerator
 
 
-
-
-
 class PVGenerator(Generator):
     
     def __init__(self, name, ic_0_mu = 0.0, ic_1_mu = 0.0, oc_0_mu = 0.0, oc_1_mu = 0.0, degradation = 5e-3):

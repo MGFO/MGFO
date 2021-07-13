@@ -6,3 +6,5 @@ from .PV import PVGenerator, PVGeneratorDiscrete
 from .WT import WTGenerator, WTGeneratorDiscrete
 
 from .Storage import Storage
+
+from .SimpleLine import SimpleLine

@@ -65,5 +65,5 @@ class Load(BaseResource):
     def operating_cost(self, scene):
         """Must return initial cost in monetary units, in numeric form or as an expression of the decision variables
         scene is the scene index"""
-        return self['oc_0_mu'] + self['oc_1_mu']*self['p_mw', scene]
+        return self['oc_0_mu'] + self['oc_1_mu', self.scenes.iloc[scene]]*self['p_mw', scene]
     

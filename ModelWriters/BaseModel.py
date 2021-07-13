@@ -10,6 +10,7 @@ class BaseModelWriter:
         self.model = None
         self.results = None
         self.tables = []
+        self.max_investement = None
         
         if net:
             self._add_extra_columns(self.net)
@@ -25,6 +26,17 @@ class BaseModelWriter:
     def create_model(self):
         self.model = pe.ConcreteModel()
         return self.model
+    
+    def additional_constraint(self, name, expression):
+        """
+        Adds a constraint of the simple (not  indexed) type.
+        Arguments:
+            name: unique name
+            expression: a Pyomo expression (relation between Pyomo vars and operators)
+        """
+        constraint = pe.Constraint(expr = expression)
+        setattr(self.model, name, constraint)
+        setattr(self, name, constraint)
         
     def backconfigure_network(self):
         """

@@ -7,16 +7,18 @@ class BaseSimulator:
     Defines several models for simulation, for example, constant, time-linear, exponential, piecewise, etc.
     """
     
-    def __init__(self, model='constant', post_random_up=0.2, post_random_down=0.2, post_random_model='uniform'):
+    def __init__(self, model='constant', base_value = 1.0, post_random_up=0.2, post_random_down=0.2, post_random_model='uniform',
+                a_yearly = 1.0, a_monthly = 1.0, a_hourly = 1.0, a_daily = 1.0, piecewise_hours = [ 7.0, 12.0, 16.0, 20.0, 24.0],
+                piecewise_values = [0.15, 0.25, 0.40, 0.60, 1.0 ]):
         self.model = model
         self.post_random_up = post_random_up
         self.post_random_down = post_random_down
         self.post_random_model = post_random_model
-        self.base_value = 1.0
-        self.a_yearly = 1.0
-        self.a_monthly = 1.0
-        self.a_hourly = 1.0
-        self.a_daily = 1.0
+        self.base_value = base_value 
+        self.a_yearly = a_yearly
+        self.a_monthly = a_monthly
+        self.a_hourly = a_hourly
+        self.a_daily = a_daily
         
         #value is the fraction up to the same-index hour.
         self.piecewise_hours =  [ 7.0, 12.0, 16.0, 20.0, 24.0]

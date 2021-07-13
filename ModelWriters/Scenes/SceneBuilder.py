@@ -156,18 +156,5 @@ class SceneBuilder:
         
         scenes =  pd.DataFrame(column_list)
         self.scenes = scenes
-        """
-        reg = 0
-        for d in Dias_i:
-        for h in T_i:
-            Escenarios['d'][reg] = d
-            Escenarios['h'][reg] = h
-            Escenarios['I'][reg] = Solar.solar_irradiance_seasoned_randomized(d, h)
-            Escenarios['wv'][reg] = random.uniform(1.0, 20.0)
-            reg += 1
-        
-        raise Exception("Must Implement")
-        return 
-        """
         
         return scenes

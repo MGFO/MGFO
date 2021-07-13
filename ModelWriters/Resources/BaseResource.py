@@ -50,6 +50,7 @@ class BaseResource:
             #if it is not callable nor subscriptable, return whatever:
             return v
     
+    
     def __getitem__(self, key):
         """__getitem__ work as a convenient method to simulate dictionary behaviour.
         If 2 or mode keys are given, arguments are unpacked and passed to _element_get_value, 

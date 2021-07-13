@@ -23,7 +23,10 @@ class SimpleModelWriter(BaseModelWriter):
         self.model.power_balance_constraint = pe.Constraint(scene_iterator, 
                                     rule = (lambda m, s:  self.power_balance_expression(s) == 0))        
 
-
+    def investement_constraint(self):
+        if not self.max_investement is None:
+            self.model.max_investement_constraint = pe.Constraint(expr = self.initial_cost_expression() <= self.max_investement)
+        
     def initial_cost_expression(self):
         c = 0.0
         for table in self.tables:
@@ -91,6 +94,9 @@ class SimpleModelWriter(BaseModelWriter):
         
         #power balance constraint
         self.power_balance_constraint()
+        
+        #max investement constraint:
+        self.investement_constraint()
         
         self.objective_function()
         

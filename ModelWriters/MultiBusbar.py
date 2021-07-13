@@ -6,8 +6,16 @@ import itertools
 import pandas as pd
 import numpy as np
 
+from warnings import warn
+
 class MultiBusbarModelWriter(SimpleModelWriter):
+    
+    def __init__(self, net = None, scenes = None, soft_limit_coefficient = None):
+        super().__init__(net = net, scenes = scenes)
         
+        self.soft_limit_coefficient = soft_limit_coefficient
+    
+    
     def add_power_lines(self):
         """Attaches a SimpleLine optimization model for each unmodeled line"""
         
@@ -34,6 +42,12 @@ class MultiBusbarModelWriter(SimpleModelWriter):
                 m.vn_kv = self.net.bus.vn_kv[m.from_bus]
                 
                 m.pr_mw = m.ir_ka * m.vn_kv
+                
+                #m.pr_mw = 1.0
+                #warn("Remover, valor de prueba")
+                
+                m.soft_limit_coefficient = self.soft_limit_coefficient
+                
                 self.net.line.model[e] = m
     
     def bus_power_balance_expression(self, b_index: int, scene: int):
