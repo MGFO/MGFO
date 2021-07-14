@@ -7,24 +7,23 @@ import numpy as np
 class ExtGrid(BaseResource):
     
     def __init__(self, name, peak_value=200e-6, valley_value=120e-6, rest_value=160e-6,
-                 oc_1_mu = 0.0, pr_mw = 1.0):
+                 oc_1_mu = None, pr_mw = 1.0):
         super().__init__(name, oc_1_mu = oc_1_mu, pr_mw = pr_mw)
         self.decide_construction = False
         self.size = False
         
-        if not oc_1_mu:
+        if oc_1_mu is None:
             self.oc_1_mu = Economics.ElectricityCostSimulator(peak_value = peak_value, valley_value = valley_value, rest_value = rest_value)
     
     def initialize_model(self, model, scenes):
         self.model = model
         self.scenes = scenes
-        self.scene_iterator = range(len(scenes))
 
         #energia comprada a la red
         vn = self.name + '_p_mw'
-        self.p_mw = pe.Var(self.scene_iterator, within = pe.NonNegativeReals)
+        self.p_mw = pe.Var(model.scene_set, within = pe.NonNegativeReals)
         setattr(self.model, vn, self.p_mw)
-        for e in self.scene_iterator:
+        for e in self.model.scene_set:
             self.p_mw[e].setlb(0)
             self.p_mw[e].setub(self['pa_pu', self.scenes.iloc[e]]*self['pr_mw'])
         #this var will be reported

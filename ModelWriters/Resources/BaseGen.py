@@ -7,7 +7,7 @@ class Generator(BaseResource):
     def initialize_model(self, model, scenes):
         self.model = model
         self.scenes = scenes
-        self.scene_iterator = range(len(scenes))
+        self.scene_iterator = self.model.scene_set
         self.M = 1e3
         
         #to create generator
@@ -86,7 +86,8 @@ class DiscreteGenerator(Generator):
     def initialize_model(self, model, scenes):
         self.model = model
         self.scenes = scenes
-        self.scene_iterator = range(len(scenes))
+        #self.scene_iterator = range(len(scenes))
+        self.scene_iterator = self.model.scene_set
         self.M = 1e3
         
         #to create generator

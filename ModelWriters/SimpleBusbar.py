@@ -19,8 +19,7 @@ class SimpleModelWriter(BaseModelWriter):
 
     def power_balance_constraint(self):
         #power balance constraint
-        scene_iterator = range(len(self.scenes))
-        self.model.power_balance_constraint = pe.Constraint(scene_iterator, 
+        self.model.power_balance_constraint = pe.Constraint(self.model.scene_set, 
                                     rule = (lambda m, s:  self.power_balance_expression(s) == 0))        
 
     def investement_constraint(self):
@@ -70,7 +69,7 @@ class SimpleModelWriter(BaseModelWriter):
         for table in self.tables:
             for element in range(len(table)):
                 if table['model'][element]:
-                    table['model'][element].initialize_model(self.model, self.scenes)
+                    table['model'][element].initialize_model(self.model, self.model.scenes)
     
         return self.model
     
@@ -89,6 +88,9 @@ class SimpleModelWriter(BaseModelWriter):
 
         if not self.model:
             self.model = pe.ConcreteModel()
+        
+        self.model.scenes = self.scenes
+        self.model.scene_set = pe.Set(initialize = range(len(self.scenes)), doc = 'Scenes')
         
         self.initialize_submodels()
         

@@ -47,8 +47,8 @@ class SimpleLine(BaseResource):
         self.model = model
         self.scenes = scenes
         
-        self.scene_iterator = range(len(scenes))
-
+        self.scene_iterator = self.model.scene_set
+        
         #power flow
         vn = self.name + '_pf_mw'
         self.pf_mw = pe.Var(self.scene_iterator, within = pe.Reals)

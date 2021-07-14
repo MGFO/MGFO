@@ -25,6 +25,7 @@ class BaseModelWriter:
         
     def create_model(self):
         self.model = pe.ConcreteModel()
+        self.model.scenes = pe.Set(initialize = range(len(self.scenes)), doc = 'Scene Set')
         return self.model
     
     def additional_constraint(self, name, expression):

@@ -70,9 +70,12 @@ class MultiBusbarModelWriter(SimpleModelWriter):
     
     def busbars_balance_constraints(self):
         """For each busbar a constraint is added to balance power"""
-        scene_iterator = range(len(self.scenes))        
-        bus_iterator = range(len(self.net.bus))
-        self.model.busbar_power_balance_constraint = pe.Constraint(itertools.product(bus_iterator, scene_iterator), 
+        #scene_iterator = range(len(self.scenes))        
+        #bus_iterator = range(len(self.net.bus))
+        self.model.bus_set = pe.Set(initialize = range(len(self.net.bus)))
+#        self.model.busbar_power_balance_constraint = pe.Constraint(itertools.product(bus_iterator, scene_iterator), 
+#                                    rule = (lambda m, bus, scene:  self.bus_power_balance_expression(bus, scene) == 0))    
+        self.model.busbar_power_balance_constraint = pe.Constraint(self.model.bus_set, self.model.scene_set, 
                                     rule = (lambda m, bus, scene:  self.bus_power_balance_expression(bus, scene) == 0))    
         
     def create_model(self):
@@ -90,6 +93,9 @@ class MultiBusbarModelWriter(SimpleModelWriter):
 
         if not self.model:
             self.model = pe.ConcreteModel()
+        
+        self.model.scenes = self.scenes
+        self.model.scene_set = pe.Set(initialize = range(len(self.scenes)), doc = 'Scenes')
         
         #add models for unmodeled lines
         self.add_power_lines()

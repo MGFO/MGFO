@@ -21,7 +21,8 @@ class Load(BaseResource):
         self.model = model
         self.scenes = scenes
         
-        self.scene_iterator = range(len(self.scenes))
+        ##self.scene_iterator = range(len(self.scenes))
+        self.scene_iterator = self.model.scene_set
         #energia demandada a la red
         vn = self.name + '_p_mw'
         self.p_mw = pe.Var(self.scene_iterator, within = pe.Reals)
