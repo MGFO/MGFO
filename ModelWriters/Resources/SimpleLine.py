@@ -14,7 +14,7 @@ class SimpleLine(BaseResource):
     max_i_pu is the maximum admisible current in per unit
     pf_mw is the power flow in the line"""
     
-    def __init__(self, busbar_from='', busbar_to=''):
+    def __init__(self, busbar_from='', busbar_to='', overload_hours = None, overload_cost = None, max_i_pu = 1.5):
         
         name = str(busbar_from) + '_' + str(busbar_to)
         super().__init__(name)
@@ -24,7 +24,7 @@ class SimpleLine(BaseResource):
         #current rating
         self.ir_ka = 1.0
         #maximum tolerable current in per unit
-        self.max_i_pu = 1.5
+        self.max_i_pu = max_i_pu
 
         #line voltage rating
         self.vn_kv = 1.0
@@ -36,7 +36,8 @@ class SimpleLine(BaseResource):
         self.decide_construction = False   #model must decide if construct or not 
         self.size = False   #model must decide optimal sizing  of the element
         
-        self.soft_limit_coefficient = None
+        self.overload_cost = overload_cost
+        self.overload_hours = overload_hours
         
         self.M = 1e3
     
@@ -60,7 +61,7 @@ class SimpleLine(BaseResource):
             self.pf_mw[s].setlb(- self.pr_mw * self.max_i_pu * self['pa_pu', self.scenes.iloc[s]])
             self.pf_mw[s].setub(- self.pf_mw[s].lb)
         
-        if not self.soft_limit_coefficient is None:
+        if not self.overload_cost is None:
             #total excess power
             self.excess_power_mw = pe.Var(self.scene_iterator, within = pe.NonNegativeReals)
             vn = self.name + '_ep_mw'
@@ -126,6 +127,53 @@ class SimpleLine(BaseResource):
             constraint = pe.Constraint(self.scene_iterator, rule = (lambda m, scene: -self.pf_mw[scene] - self.pr_mw == 
                                                                        self.excess_power_n[scene] - self.base_power_n[scene]))
             setattr(self.model, vn, constraint)
+        
+        if not self.overload_hours is None:
+            #excess power hours for positive and negatie power flow:
+            self.ep_h_p = pe.Var(self.scene_iterator, within = pe.Binary)
+            vn = self.name + '_ep_h_p'
+            setattr(self.model, vn, self.ep_h_p)
+            self.ep_h_n = pe.Var(self.scene_iterator, within = pe.Binary)
+            vn = self.name + '_ep_h_n'
+            setattr(self.model, vn, self.ep_h_n)
+            #excess power, positive or negative:
+            self.ep_h = pe.Var(self.scene_iterator, within = pe.Binary)
+            vn = self.name + '_ep_h'
+            setattr(self.model, vn, self.ep_h)
+            #this var will be reported
+            self.report_attrs[vn] = self.ep_h
+            
+            #constraints:
+            vn = self.name + '_c_h_1'
+            constraint = pe.Constraint(self.scene_iterator, rule = (lambda m, scene: self.pf_mw[scene] - self.pr_mw <= 
+                                                               self.M*self.ep_h_p[scene])) 
+            setattr(self.model, vn, constraint)
+
+            vn = self.name + '_c_h_2'
+            constraint = pe.Constraint(self.scene_iterator, rule = (lambda m, scene: - self.pf_mw[scene] + self.pr_mw <= 
+                                                               self.M*(1 - self.ep_h_p[scene]))) 
+            setattr(self.model, vn, constraint)
+
+            vn = self.name + '_c_h_3'
+            constraint = pe.Constraint(self.scene_iterator, rule = (lambda m, scene: -self.pf_mw[scene] - self.pr_mw <= 
+                                                               self.M*self.ep_h_n[scene])) 
+            setattr(self.model, vn, constraint)
+
+            vn = self.name + '_c_h_4'
+            constraint = pe.Constraint(self.scene_iterator, rule = (lambda m, scene:  self.pf_mw[scene] + self.pr_mw <= 
+                                                               self.M*(1 - self.ep_h_n[scene]))) 
+            setattr(self.model, vn, constraint)
+            
+            vn = self.name + '_c_h_5'
+            constraint = pe.Constraint(self.scene_iterator, rule = (lambda m, scene: self.ep_h[scene] == 
+                                                                        self.ep_h_p[scene] + self.ep_h_n[scene])) 
+            setattr(self.model, vn, constraint)
+
+            vn = self.name + '_c_h_max'            
+            constraint = pe.Constraint(rule = (sum(self.ep_h[s]*self.scenes.iloc[s]['dt']*self.scenes.iloc[s]['dd'] 
+                                                   for s in self.model.scene_set) <= self.overload_hours))
+            setattr(self.model, vn, constraint)
+
 
         #active power: power losses are not contemplated in this model
         self.p_mw = 0.0
@@ -144,6 +192,9 @@ class SimpleLine(BaseResource):
             data_frame[attr] = res            
         return data_frame
     
+    def get_tep_h(self):
+        return sum(self.ep_h[s].value*self.scenes.iloc[s]['dt']*self.scenes.iloc[s]['dd'] for s in self.model.scene_set)
+        
     def active_power(self, scene):
         """Active power is limited to the power losses. That is to avoid double accounting of the 
         power transmited in the network power balance"""
@@ -165,8 +216,8 @@ class SimpleLine(BaseResource):
     def operating_cost(self, scene):
         """Returns initial cost in monetary units, in numeric form or as an expression of the decision variables
         scene is the scene index"""
-        if not self.soft_limit_coefficient is None:
-            excess_penalty = self['excess_power_mw', scene]*self.soft_limit_coefficient
+        if not self.overload_cost is None:
+            excess_penalty = self['excess_power_mw', scene]*self.overload_cost
         else:
             excess_penalty = 0.0
             

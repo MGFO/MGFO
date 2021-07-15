@@ -10,10 +10,11 @@ from warnings import warn
 
 class MultiBusbarModelWriter(SimpleModelWriter):
     
-    def __init__(self, net = None, scenes = None, soft_limit_coefficient = None):
+    def __init__(self, net = None, scenes = None, overload_cost = None, overload_hours =  None):
         super().__init__(net = net, scenes = scenes)
         
-        self.soft_limit_coefficient = soft_limit_coefficient
+        self.overload_cost = overload_cost
+        self.overload_hours = overload_hours
     
     
     def add_power_lines(self):
@@ -26,7 +27,7 @@ class MultiBusbarModelWriter(SimpleModelWriter):
         for e in range(len(self.net.line)):
             
             if not self.net.line.model[e]:
-                m = SimpleLine('', '')
+                m = SimpleLine('', '', overload_hours = self.overload_hours, overload_cost = self.overload_cost)
                 m.from_bus = self.net.line.from_bus[e]
                 m.to_bus = self.net.line.to_bus[e]
                                 
@@ -41,13 +42,8 @@ class MultiBusbarModelWriter(SimpleModelWriter):
                 m.ir_ka = self.net.line.max_i_ka[e]
                 m.vn_kv = self.net.bus.vn_kv[m.from_bus]
                 
-                m.pr_mw = m.ir_ka * m.vn_kv
-                
-                #m.pr_mw = 1.0
-                #warn("Remover, valor de prueba")
-                
-                m.soft_limit_coefficient = self.soft_limit_coefficient
-                
+                m.pr_mw = 1.73205080 * m.ir_ka * m.vn_kv
+                                
                 self.net.line.model[e] = m
     
     def bus_power_balance_expression(self, b_index: int, scene: int):
@@ -73,8 +69,7 @@ class MultiBusbarModelWriter(SimpleModelWriter):
         #scene_iterator = range(len(self.scenes))        
         #bus_iterator = range(len(self.net.bus))
         self.model.bus_set = pe.Set(initialize = range(len(self.net.bus)))
-#        self.model.busbar_power_balance_constraint = pe.Constraint(itertools.product(bus_iterator, scene_iterator), 
-#                                    rule = (lambda m, bus, scene:  self.bus_power_balance_expression(bus, scene) == 0))    
+   
         self.model.busbar_power_balance_constraint = pe.Constraint(self.model.bus_set, self.model.scene_set, 
                                     rule = (lambda m, bus, scene:  self.bus_power_balance_expression(bus, scene) == 0))    
         
