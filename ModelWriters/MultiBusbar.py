@@ -10,11 +10,12 @@ from warnings import warn
 
 class MultiBusbarModelWriter(SimpleModelWriter):
     
-    def __init__(self, net = None, scenes = None, overload_cost = None, overload_hours =  None):
+    def __init__(self, net = None, scenes = None, overload_cost = None, overload_hours =  None, max_i_pu = 1.5):
         super().__init__(net = net, scenes = scenes)
         
         self.overload_cost = overload_cost
         self.overload_hours = overload_hours
+        self.max_i_pu = max_i_pu
     
     
     def add_power_lines(self):
@@ -27,7 +28,7 @@ class MultiBusbarModelWriter(SimpleModelWriter):
         for e in range(len(self.net.line)):
             
             if not self.net.line.model[e]:
-                m = SimpleLine('', '', overload_hours = self.overload_hours, overload_cost = self.overload_cost)
+                m = SimpleLine('', '', overload_hours = self.overload_hours, overload_cost = self.overload_cost, max_i_pu = self.max_i_pu)
                 m.from_bus = self.net.line.from_bus[e]
                 m.to_bus = self.net.line.to_bus[e]
                                 

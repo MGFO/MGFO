@@ -43,15 +43,18 @@ class BaseSimulator:
         month = 11 if month > 12 else month
         return self.base_value + self.a_hourly*scene['hour'] + self.a_daily*scene['day'] + self.a_monthly*month + self.a_yearly*scene['year']
     
-    def model_piecewise(self, scene):
-        h = scene['hour']
-        v = self.piecewise_values[0]
-        for i in range(len(self.piecewise_hours)):
-            if h < self.piecewise_hours[i]:
-                v = self.piecewise_values[i]
+    def select_piecewise(self, hour, domain, values):
+        v = values[0]
+        for i in range(len(domain)):
+            if hour < domain[i]:
+                v = values[i]
                 break
         return v
-    
+        
+    def model_piecewise(self, scene):
+        h = scene['hour']
+        return self.select_piecewise(h, self.piecewise_hours, self.piecewise_values)
+
     def model_exponential(self, scene):
         return math.exp(self.model_linear(scene))
         
@@ -80,3 +83,84 @@ class BaseSimulator:
         
         return val*self.post_value_random()
         
+class DailyInterpolator(BaseSimulator):
+    
+    def __init__(self, base_value = 1.0, post_random_up=0.2, post_random_down=0.2, post_random_model='uniform'):
+        super().__init__()
+        
+        self.model = 'daily_interpolation'
+        self.models['daily_interpolation'] = self.model_daily_interpolation
+        
+        self.post_random_up = post_random_up
+        self.post_random_down = post_random_down
+        self.post_random_model = post_random_model
+        self.base_value = base_value 
+
+        self.data_days = {}   #key is the day of the data, value must be a dict hours: [], values: []
+        
+    def add_day(self, day, hours, values):
+        """
+        add_day
+        Adds a new day as data, for example, 81st day of the year
+        with an hourly data specified as 12 2-hour steps, with 12 values.
+        Days must be ordered!!!
+        """
+        
+        self.data_days[day] = {'hours': hours, 'values': values}
+        
+    def model_daily_interpolation(self, scene):
+        
+        day = scene['day']
+        hour = scene['hour']
+        
+        ds = [k for k in self.data_days.keys()]
+        
+        l = len(ds)
+        
+        if l == 0:
+            raise Exception("No data")
+        elif l == 1:
+            #no interpolation possible, defaults to piecewise
+            domain = self.data_days[ds[0]]['hours']
+            values = self.data_days[ds[0]]['values']
+            return self.select_piecewise(hour, domain, values)
+        else:
+            #we must extend the array of days in order to simplify the search for 
+            #the correct interval
+            ds.insert(0, ds[-1] - 365)
+            ds.append(ds[1] + 365)  #the old fist now is the 1st            
+            
+            #print(ds)
+            
+            #We must find the next day in the domain 
+            found = False
+            i = 0
+            
+            while (not found) and i <= l:   #the unusual = is because data was added 
+                prev_day = ds[i]
+                next_day = ds[i+1]
+                                
+                if prev_day <= day and day <= next_day:
+                    found = True
+                else:
+                    i += 1
+
+            if not found:
+                raise Exception("Day not found in interval")
+                
+            #print("Prev Day: {0} Next_day: {1}".format(prev_day, next_day))
+            if prev_day < 0:
+                prev_day_data = self.data_days[prev_day + 365]
+            else:
+                prev_day_data = self.data_days[prev_day]
+            prev_day_value = self.select_piecewise(hour, prev_day_data['hours'], prev_day_data['values'])
+            
+            if next_day > 365:
+                next_day_data = self.data_days[next_day - 365]
+            else:
+                next_day_data = self.data_days[next_day]
+            next_day_value = self.select_piecewise(hour, next_day_data['hours'], next_day_data['values'])
+            
+            #finally, the interpolation:
+            
+            return prev_day_value + (next_day_value - prev_day_value)/(next_day - prev_day)*(day - prev_day)
