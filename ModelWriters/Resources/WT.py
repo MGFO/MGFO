@@ -29,8 +29,9 @@ class WTGenerator(Generator):
         
 class WTGeneratorDiscrete(DiscreteGenerator):
 
-    def __init__(self, name, unit_size_mw = 0.25, unit_cost_mu = 1.0, oc_0_mu = 0.0, oc_1_mu = 0.0, cut_in = 3.0, v_rated = 15.0, cut_out = 25.0):
-        super().__init__(name, unit_size_mw = unit_size_mw, unit_cost_mu = unit_cost_mu, oc_0_mu = oc_0_mu, oc_1_mu = oc_1_mu)
+    def __init__(self, name, unit_size_mw = 0.25, unit_cost_mu = 1.0, ic_0_mu = 0.0, oc_0_mu = 0.0, oc_1_mu = 0.0, 
+                 cut_in = 3.0, v_rated = 15.0, cut_out = 25.0):
+        super().__init__(name, unit_size_mw = unit_size_mw, unit_cost_mu = unit_cost_mu, ic_0_mu = ic_0_mu, oc_0_mu = oc_0_mu, oc_1_mu = oc_1_mu)
         
         self.cut_in = cut_in
         self.v_rated = v_rated

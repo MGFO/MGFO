@@ -63,7 +63,7 @@ class SimpleModelWriter(BaseModelWriter):
             op_cost += self.hourly_operational_cost_expression(e)*sref['dt']*sref['dd']*sref['discount']
         return op_cost
     
-    def objective_function(self):
+    def objective_function(self):        
         self.model.value = pe.Objective( expr = self.initial_cost_expression() + self.operational_cost_expression(), sense = pe.minimize )
         return self.model.value
 
@@ -107,3 +107,26 @@ class SimpleModelWriter(BaseModelWriter):
         
         return self.model
         
+    def opetaring_costs_value(self, elements = [], scenes = None):
+        """
+        Scenes is a list of scenes. If none, defaults all.
+        
+        elements is a list of selected elements. If None, all tables.
+        """
+        
+        if not scenes:
+            scene_iterator = range(len(self.scenes))
+
+        op_cost = 0.0
+        for e in scene_iterator:
+            sref = self.scenes.iloc[e]
+            op_cost += self.hourly_operational_cost_value(e, elements)*sref['dt']*sref['dd']*sref['discount']
+        
+        return op_cost
+        
+    def hourly_operational_cost_value(self, scene_index, elements):
+        c = 0.0
+        for element in elements:                
+            c += pe.value(element.operating_cost(scene_index))
+        return c
+    

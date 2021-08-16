@@ -77,11 +77,12 @@ class DiscreteGenerator(Generator):
     Initial cost has 3 components: a fixed cost, a "per unit" cost and a 
     rated power-dependent cost""" 
     
-    def __init__(self, name, unit_size_mw = 0.25, unit_cost_mu = 1.0, oc_0_mu = 0.0, oc_1_mu = 0.0):
+    def __init__(self, name, unit_size_mw = 0.25, unit_cost_mu = 1.0, ic_0_mu = 0.0, oc_0_mu = 0.0, oc_1_mu = 0.0):
         super().__init__(name, oc_0_mu = oc_0_mu, oc_1_mu = oc_1_mu)
         
         self.unit_size_mw = unit_size_mw
         self.unit_cost_mu = unit_cost_mu
+        self.ic_0_mu = ic_0_mu
     
     def initialize_model(self, model, scenes):
         self.model = model

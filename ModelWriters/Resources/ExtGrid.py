@@ -7,13 +7,14 @@ import numpy as np
 class ExtGrid(BaseResource):
     
     def __init__(self, name, peak_value=200e-6, valley_value=120e-6, rest_value=160e-6,
-                 oc_1_mu = None, pr_mw = 1.0):
+                 oc_1_mu = None, pr_mw = 1.0, hours = [6.0, 18.0, 23.0, 24.0] ):
         super().__init__(name, oc_1_mu = oc_1_mu, pr_mw = pr_mw)
         self.decide_construction = False
         self.size = False
         
         if oc_1_mu is None:
-            self.oc_1_mu = Economics.ElectricityCostSimulator(peak_value = peak_value, valley_value = valley_value, rest_value = rest_value)
+            self.oc_1_mu = Economics.ElectricityCostSimulator(peak_value = peak_value, valley_value = valley_value, rest_value = rest_value, 
+                                                              piecewise_hours = hours)
     
     def initialize_model(self, model, scenes):
         self.model = model

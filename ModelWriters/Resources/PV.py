@@ -17,7 +17,7 @@ class PVGenerator(Generator):
         degradation = 1 - self.degradation*model_status['year']
         if 'solar_irradiance' in model_status:
             I = model_status['solar_irradiance']
-            if 0.0 <= I and I < 1200:
+            if 0.0 <= I and I < 1300:
                 res = I / 1000.0 * degradation
             else:
                 raise ValueError("Solar radiation outside model range")
@@ -34,7 +34,7 @@ class PVGeneratorDiscrete(DiscreteGenerator):
         res = 0.0
         if 'I' in model_status:
             I = model_status['I']
-            if 0.0 <= I and I < 1200:
+            if 0.0 <= I and I < 1300:
                 res = I / 1000.0
             else:
                 raise ValueError("Solar radiation outside model range")

@@ -109,7 +109,7 @@ class ElectricityCostSimulator(BS):
     By default, 23-6 are valley hours, 6-18 are rest hours and 18-23 are peak hours.
     This can be changed by the use of the *piecewise_hours* member.
     """
-    def __init__(self, peak_value=0.20e3, valley_value=0.12e3, rest_value=0.16e3):
+    def __init__(self, peak_value=0.20e3, valley_value=0.12e3, rest_value=0.16e3, piecewise_hours = [6.0, 18.0, 23.0, 24.01]):
         super().__init__(model='piecewise', post_random_model='none')
-        self.piecewise_hours = [6.0, 18.0, 23.0, 24.01]
+        self.piecewise_hours = piecewise_hours
         self.piecewise_values = [valley_value, rest_value, peak_value, valley_value]
