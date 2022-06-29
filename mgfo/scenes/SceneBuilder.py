@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import math
 
-from ..Simulation import Economics
-from ..Simulation import Solar
-from ..Simulation import Wind
+from ..simulation import Economics
+from ..simulation import Solar
+from ..simulation import Wind
 
 
 class SceneBuilder:
