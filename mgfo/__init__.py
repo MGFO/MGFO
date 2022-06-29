@@ -3,14 +3,14 @@ from .BaseModel import network_precondition
 from .SimpleBusbar import SimpleModelWriter
 from .MultiBusbar import MultiBusbarModelWriter
 
-from .Scenes.SceneBuilder import SceneBuilder as SceneBuilder
+from .scenes.SceneBuilder import SceneBuilder as SceneBuilder
 
-from .Simulation.BaseSimulator import BaseSimulator, DailyInterpolator
+from .simulation.BaseSimulator import BaseSimulator, DailyInterpolator
 
-from .Simulation.Demand import DemandSimulator
+from .simulation.Demand import DemandSimulator
 
-from .Simulation.Economics import DeterministicGrowthSimulator, PVSimulator, ElectricityCostSimulator
+from .simulation.Economics import DeterministicGrowthSimulator, PVSimulator, ElectricityCostSimulator
 
-from .Simulation.Solar import SolarIrradianceSimulator, MonthlySolarIrradianceSimulator
+from .simulation.Solar import SolarIrradianceSimulator, MonthlySolarIrradianceSimulator
 
-from .Simulation.Wind import Weibull, CorrelatedWeibull
+from .simulation.Wind import Weibull, CorrelatedWeibull

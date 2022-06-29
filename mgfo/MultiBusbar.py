@@ -1,5 +1,5 @@
 from .SimpleBusbar import SimpleModelWriter
-from .Resources.SimpleLine import SimpleLine
+from .resources.SimpleLine import SimpleLine
 
 import pyomo.environ as pe
 import itertools

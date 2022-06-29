@@ -1,6 +1,6 @@
 import pyomo.environ as pe
 from .BaseResource import BaseResource
-from ..Simulation import Economics
+from ..simulation import Economics
 
 import numpy as np
 

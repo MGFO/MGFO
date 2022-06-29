@@ -1,6 +1,6 @@
 import pyomo.environ as pe
 from .BaseResource import BaseResource
-from ..Simulation import Demand
+from ..simulation import Demand
 import numpy as np
 
 class Load(BaseResource):
