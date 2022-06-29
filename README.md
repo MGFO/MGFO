@@ -6,7 +6,7 @@ MGFO combines the expressiveness of Python and the power of these nice projects:
   - Pandas
   - PandaPower
   - Jupyter Notebook
-  - Many others...
+  - MathPlotLib
 
 To create an open source tool for the analysis and optimization of electrical grids. Special emphasis is in the study of renewable (solar, wind, etc.) resources insertion.
 
